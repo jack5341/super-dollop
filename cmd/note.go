@@ -19,10 +19,6 @@ var noteCmd = &cobra.Command{
 	},
 }
 
-var (
-	note string
-)
-
 func init() {
 	godotenv.Load()
 	rootCmd.AddCommand(noteCmd)
