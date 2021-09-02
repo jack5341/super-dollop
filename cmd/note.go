@@ -14,9 +14,6 @@ import (
 var noteCmd = &cobra.Command{
 	Use:   "note",
 	Short: "A brief description of your command",
-	Run: func(cmd *cobra.Command, args []string) {
-
-	},
 }
 
 func init() {
