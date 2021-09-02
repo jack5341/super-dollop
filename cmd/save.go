@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // saveCmd represents the note command
@@ -17,12 +20,13 @@ var saveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
+		export, _ := cmd.Flags().GetString("export")
 		if note != "" {
-			encryptString(note)
+			encryptString(note,export)
 		}
 
 		if file != "" {
-			encryptFile(file)
+			encryptFile(file,export)
 		}
 	},
 }
@@ -35,9 +39,10 @@ func init() {
 	rootCmd.AddCommand(saveCmd)
 	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
 	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
+	rootCmd.PersistentFlags().StringP("export", "e", ".", "--export=<EXPORT PATH>")
 }
 
-func encryptString(value string) {
+func encryptString(value string, edit string) {
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
 	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
@@ -54,27 +59,37 @@ func encryptString(value string) {
 		io.WriteString(stdin, value)
 	}()
 
-	/*
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	result := string(out)
-	 */
+	fmt.Println(result)
 }
 
-func encryptFile(filePath string) {
+func encryptFile(filePath string, export string) {
 	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
 
-	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
-
-	defer isDone.Success("Successfully encrypted!")
-
 	// _ is result
-	_, err := cmd.Output()
+	out, err := cmd.Output()
 
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	result := string(out)
+	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
+
+	path := filePath
+	fileName := filepath.Base(path)
+
+	if len(export) > 0 {
+		err = ioutil.WriteFile(fileName + ".asc", []byte(result), 0644)
+		if(err != nil) {
+			log.Fatal(err)
+		}
+	}
+
+	defer isDone.Success("Successfully encrypted!")
 }
