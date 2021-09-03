@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/pterm/pterm"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+
+	"github.com/joho/godotenv"
+	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
 )
 
 // saveCmd represents the note command
@@ -41,6 +42,14 @@ func init() {
 }
 
 func encryptString(value string, isPrint bool) {
+	buckets, err := Client.ListBuckets()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	fmt.Println(buckets)
+
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
 	isDone, _ := pterm.DefaultSpinner.Start()
@@ -87,13 +96,13 @@ func encryptFile(filePath string, isPrint bool) {
 	}
 
 	/*
-	if len(export) > 0 {
-		err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
-		if (err != nil) {
-			log.Fatal(err)
+		if len(export) > 0 {
+			err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
+			if (err != nil) {
+				log.Fatal(err)
+			}
 		}
-	}
-	 */
+	*/
 
 	isDone.Success("Successfully encrypted!")
 }
