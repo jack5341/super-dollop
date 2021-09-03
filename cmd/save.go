@@ -21,12 +21,13 @@ var saveCmd = &cobra.Command{
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
 		export, _ := cmd.Flags().GetString("export")
+		isPrint, _ := cmd.Flags().GetBool("print")
 		if note != "" {
-			encryptString(note,export)
+			encryptString(note, export, isPrint)
 		}
 
 		if file != "" {
-			encryptFile(file,export)
+			encryptFile(file,export, isPrint)
 		}
 	},
 }
@@ -39,15 +40,14 @@ func init() {
 	rootCmd.AddCommand(saveCmd)
 	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
 	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
+	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
 	rootCmd.PersistentFlags().StringP("export", "e", ".", "--export=<EXPORT PATH>")
 }
 
-func encryptString(value string, edit string) {
+func encryptString(value string, edit string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
 	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
-
-	defer isDone.Success("Successfully encrypted!")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -65,10 +65,17 @@ func encryptString(value string, edit string) {
 	}
 
 	result := string(out)
-	fmt.Println(result)
+
+	fmt.Println(isPrint)
+
+	if isPrint {
+		fmt.Println(result)
+	}
+
+	defer isDone.Success("Successfully encrypted!")
 }
 
-func encryptFile(filePath string, export string) {
+func encryptFile(filePath string, export string, print bool) {
 	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
 
 	// _ is result
@@ -85,11 +92,11 @@ func encryptFile(filePath string, export string) {
 	fileName := filepath.Base(path)
 
 	if len(export) > 0 {
-		err = ioutil.WriteFile(fileName + ".asc", []byte(result), 0644)
-		if(err != nil) {
+		err = ioutil.WriteFile(fileName+".asc", []byte(result), 0644)
+		if (err != nil) {
 			log.Fatal(err)
 		}
 	}
 
-	defer isDone.Success("Successfully encrypted!")
+	isDone.Success("Successfully encrypted!")
 }
