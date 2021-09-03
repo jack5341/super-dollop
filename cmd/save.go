@@ -73,7 +73,7 @@ func encryptString(value string, edit string, isPrint bool) {
 	defer isDone.Success("Successfully encrypted!")
 }
 
-func encryptFile(filePath string, export string, print bool) {
+func encryptFile(filePath string, export string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
 
 	// _ is result
@@ -85,6 +85,10 @@ func encryptFile(filePath string, export string, print bool) {
 
 	result := string(out)
 	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
+
+	if isPrint {
+		fmt.Println(result)
+	}
 
 	path := filePath
 	fileName := filepath.Base(path)
