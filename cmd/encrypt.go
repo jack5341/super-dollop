@@ -10,12 +10,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 // saveCmd represents the note command
 var saveCmd = &cobra.Command{
-	Use:   "save",
+	Use:   "enc",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
 		note, _ := cmd.Flags().GetString("note")
@@ -41,7 +40,7 @@ func init() {
 	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
 	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
 	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
-	rootCmd.PersistentFlags().StringP("export", "e", ".", "--export=<EXPORT PATH>")
+	rootCmd.PersistentFlags().StringP("export", "e", "", "--export=<EXPORT PATH>")
 }
 
 func encryptString(value string, edit string, isPrint bool) {
@@ -90,11 +89,8 @@ func encryptFile(filePath string, export string, isPrint bool) {
 		fmt.Println(result)
 	}
 
-	path := filePath
-	fileName := filepath.Base(path)
-
 	if len(export) > 0 {
-		err = ioutil.WriteFile(fileName+".asc", []byte(result), 0644)
+		err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
 		if (err != nil) {
 			log.Fatal(err)
 		}
