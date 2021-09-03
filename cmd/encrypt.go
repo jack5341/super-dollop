@@ -6,7 +6,6 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -19,14 +18,13 @@ var saveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
-		export, _ := cmd.Flags().GetString("export")
 		isPrint, _ := cmd.Flags().GetBool("print")
 		if note != "" {
-			encryptString(note, export, isPrint)
+			encryptString(note, isPrint)
 		}
 
 		if file != "" {
-			encryptFile(file,export, isPrint)
+			encryptFile(file, isPrint)
 		}
 	},
 }
@@ -40,13 +38,12 @@ func init() {
 	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
 	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
 	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
-	rootCmd.PersistentFlags().StringP("export", "e", "", "--export=<EXPORT PATH>")
 }
 
-func encryptString(value string, edit string, isPrint bool) {
+func encryptString(value string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
-	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
+	isDone, _ := pterm.DefaultSpinner.Start()
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -72,7 +69,7 @@ func encryptString(value string, edit string, isPrint bool) {
 	defer isDone.Success("Successfully encrypted!")
 }
 
-func encryptFile(filePath string, export string, isPrint bool) {
+func encryptFile(filePath string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
 
 	// _ is result
@@ -83,18 +80,20 @@ func encryptFile(filePath string, export string, isPrint bool) {
 	}
 
 	result := string(out)
-	isDone, _ := pterm.DefaultSpinner.Start("Encrypting...")
+	isDone, _ := pterm.DefaultSpinner.Start()
 
 	if isPrint {
 		fmt.Println(result)
 	}
 
+	/*
 	if len(export) > 0 {
 		err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
 		if (err != nil) {
 			log.Fatal(err)
 		}
 	}
+	 */
 
 	isDone.Success("Successfully encrypted!")
 }
