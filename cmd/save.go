@@ -66,8 +66,6 @@ func encryptString(value string, edit string, isPrint bool) {
 
 	result := string(out)
 
-	fmt.Println(isPrint)
-
 	if isPrint {
 		fmt.Println(result)
 	}
