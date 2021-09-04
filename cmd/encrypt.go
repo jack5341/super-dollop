@@ -27,28 +27,7 @@ var saveCmd = &cobra.Command{
 		file, _ := cmd.Flags().GetString("file")
 		isPrint, _ := cmd.Flags().GetBool("print")
 		if note != "" {
-			validation := func(input string) error {
-				if input == "" {
-					return errors.New("folder name is required input")
-				}
-
-				validPath := regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
-
-				if !validPath.MatchString(input) {
-					return errors.New("please enter valid file name")
-				}
-
-				return nil
-			}
-
-			noteName := promptui.Prompt{
-				Label:    "Give a name to your note",
-				Validate: validation,
-			}
-
-			result, _ := noteName.Run()
-
-			encryptString(note, isPrint, result)
+			encryptString(note, isPrint)
 		}
 
 		if file != "" {
@@ -68,9 +47,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
 }
 
-func encryptString(value string, isPrint bool, filename string) {
-	fmt.Println(filename)
-
+func encryptString(value string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
 	isDone, _ := pterm.DefaultSpinner.Start()
@@ -97,11 +74,32 @@ func encryptString(value string, isPrint bool, filename string) {
 		return
 	}
 
+	validation := func(input string) error {
+		if input == "" {
+			return errors.New("folder name is required input")
+		}
+
+		validPath := regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+
+		if !validPath.MatchString(input) {
+			return errors.New("please enter valid file name")
+		}
+
+		return nil
+	}
+
+	notePrompt := promptui.Prompt{
+		Label:    "Give a name to your note",
+		Validate: validation,
+	}
+
+	noteName, _ := notePrompt.Run()
+
 	readedResult := strings.NewReader(result)
 
 	bucketName := os.Getenv("MINIO_BUCKET_NAME")
 
-	status, err := Client.PutObject(bucketName, "/notes/"+filename+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
+	status, err := Client.PutObject(bucketName, "/notes/"+noteName+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
 		ContentType: "application/pgp-encrypted",
 	})
 
