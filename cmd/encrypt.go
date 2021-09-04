@@ -6,8 +6,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/minio/minio-go"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
@@ -65,9 +68,10 @@ func encryptString(value string, isPrint bool) {
 
 	if isPrint {
 		fmt.Println(result)
+		return
 	}
 
-	defer isDone.Success("Successfully encrypted!")
+	defer isDone.Success("Successfully encrypted and saved!")
 }
 
 func encryptFile(filePath string, isPrint bool) {
@@ -85,16 +89,19 @@ func encryptFile(filePath string, isPrint bool) {
 
 	if isPrint {
 		fmt.Println(result)
+		return
 	}
 
-	/*
-		if len(export) > 0 {
-			err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
-			if (err != nil) {
-				log.Fatal(err)
-			}
-		}
-	*/
+	readedResult := strings.NewReader(result)
+	fileName := filepath.Base(filePath)
 
-	isDone.Success("Successfully encrypted!")
+	status, err := Client.PutObject("noname", fileName+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
+		ContentType: "application/pgp-encrypted",
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	isDone.Success("Successfully encrypted and saved! ", status)
 }
