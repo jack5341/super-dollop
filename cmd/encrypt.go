@@ -34,7 +34,7 @@ var gpgID string
 
 func init() {
 	godotenv.Load()
-	gpgID = os.Getenv("GPG_ID")
+	gpgID = os.Getenv("MINIO_GPG_ID")
 	rootCmd.AddCommand(saveCmd)
 	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
 	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
@@ -42,14 +42,6 @@ func init() {
 }
 
 func encryptString(value string, isPrint bool) {
-	buckets, err := Client.ListBuckets()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	fmt.Println(buckets)
-
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
 	isDone, _ := pterm.DefaultSpinner.Start()
