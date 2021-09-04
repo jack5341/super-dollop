@@ -3,8 +3,9 @@ module github.com/super-dollop
 go 1.16
 
 require (
-	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be // indirect
-	github.com/joho/godotenv v1.3.0 // indirect
+	github.com/go-ini/ini v1.62.0 // indirect
+	github.com/joho/godotenv v1.3.0
+	github.com/minio/minio-go v6.0.14+incompatible
+	github.com/pterm/pterm v0.12.30
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.8.1
 )
