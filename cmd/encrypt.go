@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/pterm/pterm"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+
+	"github.com/joho/godotenv"
+	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
 )
 
 // saveCmd represents the note command
@@ -33,7 +34,7 @@ var gpgID string
 
 func init() {
 	godotenv.Load()
-	gpgID = os.Getenv("GPG_ID")
+	gpgID = os.Getenv("MINIO_GPG_ID")
 	rootCmd.AddCommand(saveCmd)
 	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
 	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
@@ -87,13 +88,13 @@ func encryptFile(filePath string, isPrint bool) {
 	}
 
 	/*
-	if len(export) > 0 {
-		err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
-		if (err != nil) {
-			log.Fatal(err)
+		if len(export) > 0 {
+			err = ioutil.WriteFile( filePath + ".asc", []byte(result), 0644)
+			if (err != nil) {
+				log.Fatal(err)
+			}
 		}
-	}
-	 */
+	*/
 
 	isDone.Success("Successfully encrypted!")
 }
