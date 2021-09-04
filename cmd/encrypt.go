@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/manifoldco/promptui"
 	"github.com/minio/minio-go"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -24,7 +27,28 @@ var saveCmd = &cobra.Command{
 		file, _ := cmd.Flags().GetString("file")
 		isPrint, _ := cmd.Flags().GetBool("print")
 		if note != "" {
-			encryptString(note, isPrint)
+			validation := func(input string) error {
+				if input == "" {
+					return errors.New("folder name is required input")
+				}
+
+				validPath := regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+
+				if !validPath.MatchString(input) {
+					return errors.New("please enter valid file name")
+				}
+
+				return nil
+			}
+
+			noteName := promptui.Prompt{
+				Label:    "Give a name to your note",
+				Validate: validation,
+			}
+
+			result, _ := noteName.Run()
+
+			encryptString(note, isPrint, result)
 		}
 
 		if file != "" {
@@ -44,7 +68,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
 }
 
-func encryptString(value string, isPrint bool) {
+func encryptString(value string, isPrint bool, filename string) {
+	fmt.Println(filename)
+
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
 	isDone, _ := pterm.DefaultSpinner.Start()
@@ -71,13 +97,24 @@ func encryptString(value string, isPrint bool) {
 		return
 	}
 
-	defer isDone.Success("Successfully encrypted and saved!")
+	readedResult := strings.NewReader(result)
+
+	bucketName := os.Getenv("MINIO_BUCKET_NAME")
+
+	status, err := Client.PutObject(bucketName, "/notes/"+filename+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
+		ContentType: "application/pgp-encrypted",
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer isDone.Success("Successfully encrypted and saved! ", status)
 }
 
 func encryptFile(filePath string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
 
-	// _ is result
 	out, err := cmd.Output()
 
 	if err != nil {
