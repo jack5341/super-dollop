@@ -6,8 +6,8 @@ import (
 
 // connectCmd represents the connect command
 var connectCmd = &cobra.Command{
-	Use:   "connect",
-	Short: "Connect to MinIO with required credentials",
+	Use:   "list",
+	Short: "List your all encrypted files and notes.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 	},
