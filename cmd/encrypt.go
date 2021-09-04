@@ -95,7 +95,9 @@ func encryptFile(filePath string, isPrint bool) {
 	readedResult := strings.NewReader(result)
 	fileName := filepath.Base(filePath)
 
-	status, err := Client.PutObject("noname", fileName+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
+	bucketName := os.Getenv("MINIO_BUCKET_NAME")
+
+	status, err := Client.PutObject(bucketName, "/files/"+fileName+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
 		ContentType: "application/pgp-encrypted",
 	})
 
