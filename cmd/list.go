@@ -52,9 +52,11 @@ func list(name string) {
 		NoteTable = append(NoteTable, []string{v.Owner.DisplayName, v.Key, size})
 	}
 
-	fmt.Print("Your Notes \n")
-	fmt.Println("----------")
-	pterm.DefaultTable.WithHasHeader().WithData(NoteTable).Render()
+	if len(NoteTable) > 1 {
+		fmt.Print("Your Notes \n")
+		fmt.Println("----------")
+		pterm.DefaultTable.WithHasHeader().WithData(NoteTable).Render()
+	}
 
 	// Files
 	FileList := Client.ListObjects(bucketName, "files", true, nil)
@@ -66,7 +68,9 @@ func list(name string) {
 		FileTable = append(FileTable, []string{v.Owner.DisplayName, v.Key, size})
 	}
 
-	fmt.Print("\nYour Files \n")
-	fmt.Println("----------")
-	pterm.DefaultTable.WithHasHeader().WithData(FileTable).Render()
+	if len(FileList) > 1 {
+		fmt.Print("Your Files \n")
+		fmt.Println("----------")
+		pterm.DefaultTable.WithHasHeader().WithData(FileTable).Render()
+	}
 }
