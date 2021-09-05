@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// saveCmd represents the note command
-var saveCmd = &cobra.Command{
+// encCommand represents the encrypt command
+var encCommand = &cobra.Command{
 	Use:   "enc",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
