@@ -25,7 +25,7 @@ var listCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	rootCmd.Flags().StringP("delete", "d", "", "--delete=name-of-note-or-file")
+	listCmd.Flags().StringP("delete", "d", "", "--delete=name-of-note-or-file")
 }
 
 func list(name string) {
