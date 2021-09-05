@@ -42,9 +42,9 @@ func init() {
 	godotenv.Load()
 	gpgID = os.Getenv("MINIO_GPG_ID")
 	rootCmd.AddCommand(saveCmd)
-	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
-	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
-	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
+	saveCmd.Flags().StringP("note", "n", "", "--note=here-is-my-note")
+	saveCmd.Flags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
+	saveCmd.Flags().BoolP("print", "p", false, "-p")
 }
 
 func encryptString(value string, isPrint bool) {
