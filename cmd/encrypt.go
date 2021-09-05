@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// saveCmd represents the note command
-var saveCmd = &cobra.Command{
+// encCommand represents the encrypt command
+var encCommand = &cobra.Command{
 	Use:   "enc",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -41,10 +41,10 @@ var gpgID string
 func init() {
 	godotenv.Load()
 	gpgID = os.Getenv("MINIO_GPG_ID")
-	rootCmd.AddCommand(saveCmd)
-	rootCmd.PersistentFlags().StringP("note", "n", "", "--note=here-is-my-note")
-	rootCmd.PersistentFlags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
-	rootCmd.PersistentFlags().BoolP("print", "p", false, "-p")
+	rootCmd.AddCommand(encCommand)
+	encCommand.Flags().StringP("note", "n", "", "--note=here-is-my-note")
+	encCommand.Flags().StringP("file", "f", "", "--file=<YOUR FILE PATH>")
+	encCommand.Flags().BoolP("print", "p", false, "-p")
 }
 
 func encryptString(value string, isPrint bool) {
