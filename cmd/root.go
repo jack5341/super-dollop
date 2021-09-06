@@ -11,7 +11,7 @@ var Client *minio.Client
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "super-dollop",
+	Use:   "dollop",
 	Short: "A brief description of your application",
 }
 
