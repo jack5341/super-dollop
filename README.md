@@ -14,17 +14,16 @@
 
 # Super Dollop
 **Super Dollop** can encrypt your files and notes by your own [GPG](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent) key and save them in [S3](https://docs.aws.amazon.com/sdk-for-go/api/service/s3/) or [minIO](https://docs.min.io/docs/golang-client-api-reference.html) to keep them safe and portability, also you can use **Super Dollop** for encrypt your file quickly to print it. So with **Super Dollop** you'll solve your keep your notes with security problem easily with Gopher.
+By the way if you want to encrypt your file you can print it directly to your terminal with `-p` easily.
 
-![list-command](https://user-images.githubusercontent.com/53150440/132383823-3970f586-1281-4bde-8f9d-6e6463263b48.gif)
+|   |   |
+|--	|--	|
+ ![list-command](https://user-images.githubusercontent.com/53150440/132383823-3970f586-1281-4bde-8f9d-6e6463263b48.gif) |  ![print](https://user-images.githubusercontent.com/53150440/132392553-6189f7bc-494f-472e-b6b4-335e45d539cf.gif)
+
 
 ```sh
 dollop list
 ```
-
-### Dollop can also do print your encrypted file directly!
-With `-p` flag dollop can also print it directly without saving.
-
-![print](https://user-images.githubusercontent.com/53150440/132387521-c3e0d0b5-4d98-4b87-b3dc-fa42644594db.gif)
 
 # Requirements
 - [Go](https://golang.org/) `>= 1.16
@@ -107,3 +106,19 @@ COMMANDS:
     help        Help about any command
     list        List your all encrypted files and notes.
 ```
+
+# Cli Schema
+
+| Commands | Flags |     
+| :-------- | :------- | 
+| `dec`      | `-n --name` | 
+| `enc`      | `-f --file -n --note -p --print` | 
+| `list`      | `-d --delete` | 
+
+## Feedback
+
+If you have any feedback, please reach out to us at nedim.akar53411@gmail.com
+
+## License
+
+[Apache-2.0](https://choosealicense.com/licenses/apache-2.0/)
