@@ -1,4 +1,4 @@
-module github.com/super-dollop
+module github.com/jack5341/super-dollop
 
 go 1.16
 
