@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/minio/minio-go"
 	"github.com/spf13/cobra"
-	"github.com/super-dollop/pkg"
+	"github.com/jack5341/super-dollop/pkg"
 )
 
 var cfgFile string
