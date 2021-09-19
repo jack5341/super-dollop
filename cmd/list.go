@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -15,8 +17,14 @@ var listCmd = &cobra.Command{
 	Short: "List your all encrypted files and notes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		delete, _ := cmd.Flags().GetString("delete")
+
+		var err error
 		if delete != "" {
-			list(delete)
+			err = list(delete)
+
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		list("")
@@ -28,17 +36,16 @@ func init() {
 	listCmd.Flags().StringP("delete", "d", "", "--delete=name-of-note-or-file")
 }
 
-func list(name string) {
+func list(name string) error {
 	bucketName := os.Getenv("MINIO_BUCKET_NAME")
 
 	if name != "" {
 		err := Client.RemoveObject(bucketName, name)
 		if err != nil {
-			fmt.Println(err, "failed to remove object")
-			return
+			return errors.New("failed to remove object")
 		}
 		fmt.Println("removed successfully")
-		return
+		return nil
 	}
 
 	// Notes
@@ -74,4 +81,6 @@ func list(name string) {
 		fmt.Println("----------")
 		pterm.DefaultTable.WithHasHeader().WithData(FileTable).Render()
 	}
+
+	return nil
 }
