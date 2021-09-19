@@ -83,6 +83,10 @@ func encryptString(value string, isPrint bool) {
 			return errors.New("please enter valid file name")
 		}
 
+		if _, err := Client.StatObject(os.Getenv("MINIO_BUCKET_NAME"), "notes/"+input+".asc", minio.StatObjectOptions{}); err == nil {
+			return errors.New("note is already exists")
+		}
+
 		return nil
 	}
 
