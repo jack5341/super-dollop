@@ -118,7 +118,7 @@ func encryptString(value string, isPrint bool) error {
 }
 
 func encryptFile(filePath string, isPrint bool) error {
-	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
+	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, filePath)
 
 	var err error
 	var stdout io.Reader
