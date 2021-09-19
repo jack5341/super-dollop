@@ -14,7 +14,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/manifoldco/promptui"
 	"github.com/minio/minio-go"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -26,12 +25,16 @@ var encCommand = &cobra.Command{
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
 		isPrint, _ := cmd.Flags().GetBool("print")
+		var err error
 		if note != "" {
-			encryptString(note, isPrint)
+			err = encryptString(note, isPrint)
 		}
 
 		if file != "" {
-			encryptFile(file, isPrint)
+			err = encryptFile(file, isPrint)
+		}
+		if err != nil {
+			log.Fatal(err)
 		}
 	},
 }
@@ -47,14 +50,12 @@ func init() {
 	encCommand.Flags().BoolP("print", "p", false, "-p")
 }
 
-func encryptString(value string, isPrint bool) {
+func encryptString(value string, isPrint bool) error {
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
-
-	isDone, _ := pterm.DefaultSpinner.Start()
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("occurred with a problem while encrypt string")
 	}
 
 	go func() {
@@ -64,25 +65,29 @@ func encryptString(value string, isPrint bool) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("occurred with a problem while combined output")
 	}
 
 	result := string(out)
 
 	if isPrint {
 		fmt.Println(result)
-		return
+		return nil
 	}
 
 	validation := func(input string) error {
 		if input == "" {
-			return errors.New("folder name is required input")
+			return errors.New("note name is required input")
 		}
 
 		validPath := regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 
 		if !validPath.MatchString(input) {
 			return errors.New("please enter valid file name")
+		}
+
+		if _, err := Client.StatObject(os.Getenv("MINIO_BUCKET_NAME"), "notes/"+input+".asc", minio.StatObjectOptions{}); err == nil {
+			return errors.New("note is already exists")
 		}
 
 		return nil
@@ -104,41 +109,48 @@ func encryptString(value string, isPrint bool) {
 	})
 
 	if err != nil {
-		panic(err)
+		return errors.New("occurred with a problem while upload encrypted string")
 	}
 
-	defer isDone.Success("Successfully encrypted and saved! ", status)
+	fmt.Println("successfully encrypted ", status)
+	return nil
 }
 
-func encryptFile(filePath string, isPrint bool) {
-	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, "-o", "/dev/stdout", filePath)
+func encryptFile(filePath string, isPrint bool) error {
+	cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, filePath)
 
-	out, err := cmd.Output()
-
-	if err != nil {
-		log.Fatal(err)
+	var err error
+	var stdout io.Reader
+	if stdout, err = cmd.StdoutPipe(); err != nil {
+		return err
 	}
 
-	result := string(out)
-	isDone, _ := pterm.DefaultSpinner.Start()
+	err = cmd.Start()
+	if err != nil {
+		return errors.New("occurred with a problem while upload encrypted file")
+	}
+	defer cmd.Wait()
 
 	if isPrint {
-		fmt.Println(result)
-		return
+		stdout = io.TeeReader(stdout, os.Stdout)
 	}
 
-	readedResult := strings.NewReader(result)
 	fileName := filepath.Base(filePath)
 
 	bucketName := os.Getenv("MINIO_BUCKET_NAME")
 
-	status, err := Client.PutObject(bucketName, "/files/"+fileName+".asc", readedResult, int64(len(result)), minio.PutObjectOptions{
+	_, err = Client.PutObject(bucketName, "/files/"+fileName+".asc", stdout, -1, minio.PutObjectOptions{
 		ContentType: "application/pgp-encrypted",
 	})
 
 	if err != nil {
-		panic(err)
+		return errors.New("occurred with a problem while upload encrypted file")
 	}
 
-	isDone.Success("Successfully encrypted and saved! ", status)
+	if err := cmd.Wait(); err != nil {
+		return errors.New("occurred with a problem while upload encrypted file")
+	}
+
+	fmt.Println("successfully encrypted")
+	return nil
 }
