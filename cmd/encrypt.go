@@ -74,7 +74,7 @@ func encryptString(value string, isPrint bool) {
 
 	validation := func(input string) error {
 		if input == "" {
-			return errors.New("folder name is required input")
+			return errors.New("note name is required input")
 		}
 
 		validPath := regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
