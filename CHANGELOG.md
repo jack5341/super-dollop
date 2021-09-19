@@ -2,16 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
-
-### Bug Fixes
-
--   Module url
--   Module url
+## [2.0] - 2021-09-09
 
 ### Features
 
--   Added validation for same name and check connection
+-   Save encrypted file to current path
+-   Generated CHANGELOG.md by <a href="https://github.com/orhun/git-cliff" target="_blank">git-cliff</a>
+-   Added validation for checking is connected and is there already same name
+-   Refacted all logs about errors
 
 ### Refact
 
