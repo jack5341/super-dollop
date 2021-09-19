@@ -22,32 +22,29 @@ var decCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(decCmd)
-	decCmd.Flags().StringP("name", "n", "", "Decrypt and show your note or file")
+	decCmd.PersistentFlags().StringP("name", "n", "", "Decrypt and show your note or file")
 }
 
 func decrypt(name string) {
-	if name == "" {
-		panic("Please provide a name")
-	}
-
 	bucketName := os.Getenv("MINIO_BUCKET_NAME")
 
 	status, err := Client.GetObject(bucketName, name, minio.GetObjectOptions{})
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err, "failed while getting data")
+		return
 	}
 
 	tempPath := "/tmp/" + path.Base(name)
 
 	localFile, err := os.Create(tempPath)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err, "failed while creating file")
 		return
 	}
 
 	if _, err = io.Copy(localFile, status); err != nil {
-		fmt.Println(err)
+		fmt.Println(err, "failed while copying data")
 		return
 	}
 
@@ -55,8 +52,9 @@ func decrypt(name string) {
 	cmd := exec.Command("gpg", "--decrypt", tempPath)
 	data, err := cmd.Output()
 	if err != nil {
-		panic(err)
+		fmt.Println(err, "failed while decrypting data")
+		return
 	}
 
-	fmt.Println(string(data))
+	defer fmt.Println(string(data))
 }

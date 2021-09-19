@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +13,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/manifoldco/promptui"
 	"github.com/minio/minio-go"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -50,11 +48,10 @@ func init() {
 func encryptString(value string, isPrint bool) {
 	cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
 
-	isDone, _ := pterm.DefaultSpinner.Start()
-
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err, "occurred with a problem while encrypt string")
+		return
 	}
 
 	go func() {
@@ -64,7 +61,8 @@ func encryptString(value string, isPrint bool) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err, "occurred with a problem while combined output")
+		return
 	}
 
 	result := string(out)
@@ -104,10 +102,11 @@ func encryptString(value string, isPrint bool) {
 	})
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err, "occurred with a problem while upload encrypted string")
+		return
 	}
 
-	defer isDone.Success("Successfully encrypted and saved! ", status)
+	fmt.Println("successfully encrypted ", status)
 }
 
 func encryptFile(filePath string, isPrint bool) {
@@ -116,11 +115,11 @@ func encryptFile(filePath string, isPrint bool) {
 	out, err := cmd.Output()
 
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err, "occurred with a problem while upload encrypted file")
+		return
 	}
 
 	result := string(out)
-	isDone, _ := pterm.DefaultSpinner.Start()
 
 	if isPrint {
 		fmt.Println(result)
@@ -137,8 +136,9 @@ func encryptFile(filePath string, isPrint bool) {
 	})
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err, "occurred with a problem while upload encrypted file")
+		return
 	}
 
-	isDone.Success("Successfully encrypted and saved! ", status)
+	fmt.Println("succesfully encrypted ", status)
 }

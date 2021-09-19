@@ -34,9 +34,10 @@ func list(name string) {
 	if name != "" {
 		err := Client.RemoveObject(bucketName, name)
 		if err != nil {
-			panic(err)
+			fmt.Println(err, "failed to remove object")
+			return
 		}
-		fmt.Println("Removed Successfully!")
+		fmt.Println("removed successfully")
 		return
 	}
 

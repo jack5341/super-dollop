@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/minio/minio-go"
@@ -15,7 +16,7 @@ func Connect() *minio.Client {
 	// Initialize minio client object.
 	minioClient, err := minio.New(endpoint, accessKeyID, secretAccessKey, useSSL)
 	if err != nil {
-		panic(err)
+		fmt.Println(err, "failed while connect to object storage")
 	}
 
 	return minioClient
