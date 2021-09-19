@@ -14,7 +14,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/manifoldco/promptui"
 	"github.com/minio/minio-go"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -132,8 +131,6 @@ func encryptFile(filePath string, isPrint bool) error {
 	}
 	defer cmd.Wait()
 
-	isDone, _ := pterm.DefaultSpinner.Start()
-
 	if isPrint {
 		stdout = io.TeeReader(stdout, os.Stdout)
 	}
@@ -142,7 +139,7 @@ func encryptFile(filePath string, isPrint bool) error {
 
 	bucketName := os.Getenv("MINIO_BUCKET_NAME")
 
-	status, err := Client.PutObject(bucketName, "/files/"+fileName+".asc", stdout, -1, minio.PutObjectOptions{
+	_, err = Client.PutObject(bucketName, "/files/"+fileName+".asc", stdout, -1, minio.PutObjectOptions{
 		ContentType: "application/pgp-encrypted",
 	})
 
@@ -154,6 +151,6 @@ func encryptFile(filePath string, isPrint bool) error {
 		return errors.New("occurred with a problem while upload encrypted file")
 	}
 
-	isDone.Success("Successfully encrypted and saved! ", status)
+	fmt.Println("successfully encrypted")
 	return nil
 }
