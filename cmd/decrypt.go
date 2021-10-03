@@ -16,7 +16,7 @@ import (
 // decCmd represents the decrypt command
 var decCmd = &cobra.Command{
 	Use:   "dec",
-	Short: "List your all encrypted files and notes.",
+	Short: "Decrypt your files and notes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		name, _ := cmd.Flags().GetString("name")
 		var err error
