@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -15,7 +16,7 @@ func Connect() *minio.Client {
 	_, err := http.Get(url)
 
 	if err != nil {
-		panic("failed to connect to minio client")
+		log.Println("failed to connect to minio client")
 	}
 
 	endpoint := os.Getenv("MINIO_ENDPOINT")
