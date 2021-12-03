@@ -59,24 +59,31 @@ Store them in minIO or S3 buckets.`,
 			var crypter io.WriteCloser
 
 			if aes {
-				password := "12345"
+				password := cmd.PersistentFlags().String("password", "", "AES256 key")
+
+				if password == nil || *password == "" {
+					fmt.Println("Please provide a password")
+					return
+				}
 
 				hasher := md5.New()
-				hasher.Write([]byte(password))
+				hasher.Write([]byte(*password))
 				hasshedPass := hex.EncodeToString(hasher.Sum(nil))
 
 				block, _ := aesEncrypt.NewCipher([]byte(hasshedPass))
 				gcm, err := cipher.NewGCM(block)
 				if err != nil {
-					panic(err.Error())
+					errors.New(err.Error())
 				}
+
 				nonce := make([]byte, gcm.NonceSize())
 				if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-					panic(err.Error())
+					errors.New(err.Error())
 				}
+
 				ciphertext := gcm.Seal(nonce, nonce, []byte(note), nil)
 				fmt.Println(ciphertext)
-				os.Exit(3)
+				return
 			}
 
 			if gpg {
@@ -98,7 +105,7 @@ Store them in minIO or S3 buckets.`,
 				crypter.Close()
 
 				fmt.Println(buffer.String())
-				os.Exit(3)
+				return
 			}
 
 		}
