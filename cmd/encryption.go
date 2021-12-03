@@ -38,19 +38,17 @@ import (
 // encCmd represents the enc command
 var encCmd = &cobra.Command{
 	Use:   "enc",
-	Short: "Encrypt your data SHA256 or GPG key",
-	Long: `Encrypt your data SHA256 or GPG key.
+	Short: "Encrypt your data AES256 or GPG key",
+	Long: `Encrypt your data AES256 or GPG key.
 Store them in minIO or S3 buckets.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
 		gpg, _ := cmd.Flags().GetBool("gpg")
 		aes, _ := cmd.Flags().GetBool("aes")
-		gpgID := os.Getenv("DOLLOP_GPG_ID")
+		password, _ := cmd.Flags().GetString("password")
 
-		// gpg, err := cmd.Flags().GetBool("gpg")
-		// sha, err := cmd.Flags().GetBool("sha")
-		// keep, err := cmd.Flags().GetBool("keep")
+		gpgID := os.Getenv("DOLLOP_GPG_ID")
 
 		if note != "" {
 			var err error
@@ -59,19 +57,18 @@ Store them in minIO or S3 buckets.`,
 			var crypter io.WriteCloser
 
 			if aes {
-				password := cmd.PersistentFlags().String("password", "", "AES256 key")
-
-				if password == nil || *password == "" {
-					fmt.Println("Please provide a password")
+				if password == "" {
+					fmt.Println("Please provide a password to encrypt your data with AES256")
 					return
 				}
 
 				hasher := md5.New()
-				hasher.Write([]byte(*password))
+				hasher.Write([]byte(password))
 				hasshedPass := hex.EncodeToString(hasher.Sum(nil))
 
 				block, _ := aesEncrypt.NewCipher([]byte(hasshedPass))
 				gcm, err := cipher.NewGCM(block)
+
 				if err != nil {
 					errors.New(err.Error())
 				}
@@ -138,4 +135,5 @@ func init() {
 	encCmd.Flags().BoolP("keep", "m", false, "Store your data in minio")
 	encCmd.Flags().StringP("note", "n", "", "Encrypt plain text note")
 	encCmd.Flags().StringP("file", "f", "", "Encrypt your file or directory")
+	encCmd.Flags().StringP("password", "p", "", "Use your keyword as password to encrypt your input")
 }
