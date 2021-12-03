@@ -17,12 +17,21 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	aesEncrypt "crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/keybase/go-crypto/openpgp"
+	"github.com/keybase/go-crypto/openpgp/armor"
 	"github.com/spf13/cobra"
 )
 
@@ -35,6 +44,8 @@ Store them in minIO or S3 buckets.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
+		gpg, _ := cmd.Flags().GetBool("gpg")
+		aes, _ := cmd.Flags().GetBool("aes")
 		gpgID := os.Getenv("DOLLOP_GPG_ID")
 
 		// gpg, err := cmd.Flags().GetBool("gpg")
@@ -42,27 +53,54 @@ Store them in minIO or S3 buckets.`,
 		// keep, err := cmd.Flags().GetBool("keep")
 
 		if note != "" {
-			cmd := exec.Command("gpg", "--encrypt", "-r", gpgID, "--armor")
+			var err error
+			var buffer *bytes.Buffer
+			var armored io.WriteCloser
+			var crypter io.WriteCloser
 
-			stdin, err := cmd.StdinPipe()
+			if aes {
+				password := "12345"
 
-			if err != nil {
-				errors.New("occurred with a problem while encrypt string")
+				hasher := md5.New()
+				hasher.Write([]byte(password))
+				hasshedPass := hex.EncodeToString(hasher.Sum(nil))
+
+				block, _ := aesEncrypt.NewCipher([]byte(hasshedPass))
+				gcm, err := cipher.NewGCM(block)
+				if err != nil {
+					panic(err.Error())
+				}
+				nonce := make([]byte, gcm.NonceSize())
+				if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+					panic(err.Error())
+				}
+				ciphertext := gcm.Seal(nonce, nonce, []byte(note), nil)
+				fmt.Println(ciphertext)
+				os.Exit(3)
 			}
 
-			go func() {
-				defer stdin.Close()
-				io.WriteString(stdin, note)
-			}()
+			if gpg {
+				r := strings.NewReader(gpgID)
 
-			out, err := cmd.CombinedOutput()
-			if err != nil {
-				errors.New("occurred with a problem while combined output")
+				entityList, _ := openpgp.ReadArmoredKeyRing(r)
+
+				buffer = bytes.NewBuffer(nil)
+
+				armored, err = armor.Encode(buffer, note, nil)
+
+				if err != nil {
+					errors.New("Error while encoding note")
+				}
+
+				crypter, _ = openpgp.Encrypt(armored, entityList, nil, nil, nil)
+
+				crypter.Write([]byte(note))
+				crypter.Close()
+
+				fmt.Println(buffer.String())
+				os.Exit(3)
 			}
 
-			result := string(out)
-
-			fmt.Println("Encrypted note: ", result)
 		}
 
 		if file != "" {
@@ -78,6 +116,7 @@ Store them in minIO or S3 buckets.`,
 			if err != nil {
 				errors.New("occurred with a problem while upload encrypted file")
 			}
+
 			defer cmd.Wait()
 
 			fmt.Println("successfully encrypted", stdout)
@@ -87,8 +126,8 @@ Store them in minIO or S3 buckets.`,
 
 func init() {
 	rootCmd.AddCommand(encCmd)
-	encCmd.Flags().BoolP("gpg", "g", false, "Use GPG to encrypt your data")
-	encCmd.Flags().BoolP("sha", "s", false, "Use SHA256 to encrypt your data")
+	encCmd.Flags().BoolP("gpg", "g", true, "Use GPG to encrypt your data")
+	encCmd.Flags().BoolP("aes", "a", false, "Use AES256 to encrypt your data")
 	encCmd.Flags().BoolP("keep", "m", false, "Store your data in minio")
 	encCmd.Flags().StringP("note", "n", "", "Encrypt plain text note")
 	encCmd.Flags().StringP("file", "f", "", "Encrypt your file or directory")
