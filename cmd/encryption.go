@@ -23,12 +23,14 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
-	"os/exec"
 	"strings"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"github.com/keybase/go-crypto/openpgp"
 	"github.com/keybase/go-crypto/openpgp/armor"
@@ -44,21 +46,24 @@ Store them in minIO or S3 buckets.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
+		save, _ := cmd.Flags().GetBool("save")
 		gpg, _ := cmd.Flags().GetBool("gpg")
 		aes, _ := cmd.Flags().GetBool("aes")
 		password, _ := cmd.Flags().GetString("password")
+		filename, _ := cmd.Flags().GetString("filename")
 
+		// Environments
 		gpgID := os.Getenv("DOLLOP_GPG_ID")
+		endpoint := os.Getenv("MINIO_ENDPOINT")
+		accessKeyID := os.Getenv("MINIO_ACCESS_KEY")
+		secretAccessKey := os.Getenv("MINIO_SECRET_KEY")
+
+		var encryptedData []byte
 
 		if note != "" {
-			var err error
-			var buffer *bytes.Buffer
-			var armored io.WriteCloser
-			var crypter io.WriteCloser
-
 			if aes {
 				if password == "" {
-					fmt.Println("Please provide a password to encrypt your data with AES256")
+					fmt.Println("Please provide a password o encrypt your data with AES256")
 					return
 				}
 
@@ -70,20 +75,50 @@ Store them in minIO or S3 buckets.`,
 				gcm, err := cipher.NewGCM(block)
 
 				if err != nil {
-					errors.New(err.Error())
+					log.Fatal(err.Error())
+					return
 				}
 
 				nonce := make([]byte, gcm.NonceSize())
 				if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-					errors.New(err.Error())
+					log.Fatal(err.Error())
+					return
 				}
 
 				ciphertext := gcm.Seal(nonce, nonce, []byte(note), nil)
-				fmt.Println(ciphertext)
+
+				if save {
+					minioClient, err := minio.New(endpoint, &minio.Options{
+						Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+						Secure: false,
+					})
+
+					if err != nil {
+						log.Fatal(err.Error())
+						return
+					}
+
+					if filename == "" {
+						fmt.Println("If you want to save your encrypted data in minIO, please provide a filename")
+						return
+					}
+
+					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(ciphertext), int64(len(note)), minio.PutObjectOptions{})
+
+					fmt.Println("Your data has been encrypted and stored in minIO")
+					return
+				}
+
+				fmt.Println(`Your note is encrypted: ` + string(ciphertext))
 				return
 			}
 
 			if gpg {
+				var err error
+				var buffer *bytes.Buffer
+				var armored io.WriteCloser
+				var crypter io.WriteCloser
+
 				r := strings.NewReader(gpgID)
 
 				entityList, _ := openpgp.ReadArmoredKeyRing(r)
@@ -93,7 +128,8 @@ Store them in minIO or S3 buckets.`,
 				armored, err = armor.Encode(buffer, note, nil)
 
 				if err != nil {
-					errors.New("Error while encoding note")
+					log.Fatal("Error while encoding note")
+					return
 				}
 
 				crypter, _ = openpgp.Encrypt(armored, entityList, nil, nil, nil)
@@ -101,29 +137,58 @@ Store them in minIO or S3 buckets.`,
 				crypter.Write([]byte(note))
 				crypter.Close()
 
+				if save {
+					minioClient, err := minio.New(endpoint, &minio.Options{
+						Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+						Secure: false,
+					})
+
+					if err != nil {
+						log.Fatal(err.Error())
+						return
+					}
+
+					if filename == "" {
+						fmt.Println("If you want to save your encrypted data in minIO, please provide a filename")
+						return
+					}
+
+					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(encryptedData), int64(len(note)), minio.PutObjectOptions{})
+
+					fmt.Println("Your data has been encrypted and stored in minIO")
+					return
+				}
+
 				fmt.Println(buffer.String())
 				return
 			}
-
 		}
 
 		if file != "" {
-			cmd := exec.Command("gpg", "--encrypt", "--armor", "-r", gpgID, file)
-
 			var err error
-			var stdout io.Reader
-			if stdout, err = cmd.StdoutPipe(); err != nil {
-				errors.New("occurred with a problem while encrypting file")
-			}
+			var buffer *bytes.Buffer
+			var armored io.WriteCloser
+			var crypter io.WriteCloser
 
-			err = cmd.Start()
+			r := strings.NewReader(gpgID)
+
+			entityList, _ := openpgp.ReadArmoredKeyRing(r)
+
+			buffer = bytes.NewBuffer(nil)
+
+			armored, err = armor.Encode(buffer, note, nil)
+
 			if err != nil {
-				errors.New("occurred with a problem while upload encrypted file")
+				log.Fatal("Error while encoding note")
 			}
 
-			defer cmd.Wait()
+			crypter, _ = openpgp.Encrypt(armored, entityList, nil, nil, nil)
 
-			fmt.Println("successfully encrypted", stdout)
+			crypter.Write([]byte(note))
+			crypter.Close()
+
+			fmt.Println(buffer.String())
+			return
 		}
 	},
 }
@@ -132,8 +197,9 @@ func init() {
 	rootCmd.AddCommand(encCmd)
 	encCmd.Flags().BoolP("gpg", "g", true, "Use GPG to encrypt your data")
 	encCmd.Flags().BoolP("aes", "a", false, "Use AES256 to encrypt your data")
-	encCmd.Flags().BoolP("keep", "m", false, "Store your data in minio")
+	encCmd.Flags().BoolP("save", "s", false, "Store your data in minio")
 	encCmd.Flags().StringP("note", "n", "", "Encrypt plain text note")
 	encCmd.Flags().StringP("file", "f", "", "Encrypt your file or directory")
 	encCmd.Flags().StringP("password", "p", "", "Use your keyword as password to encrypt your input")
+	encCmd.Flags().StringP("filename", "", "", "Filename to store your encrypted data")
 }
