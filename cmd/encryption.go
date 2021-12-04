@@ -58,8 +58,6 @@ Store them in minIO or S3 buckets.`,
 		accessKeyID := os.Getenv("MINIO_ACCESS_KEY")
 		secretAccessKey := os.Getenv("MINIO_SECRET_KEY")
 
-		var encryptedData []byte
-
 		if note != "" {
 			if aes {
 				if password == "" {
@@ -105,11 +103,11 @@ Store them in minIO or S3 buckets.`,
 
 					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(ciphertext), int64(len(note)), minio.PutObjectOptions{})
 
-					fmt.Println("Your data has been encrypted and stored in minIO")
+					fmt.Println("Your data has been encrypted by AES256 and stored in minIO")
 					return
 				}
 
-				fmt.Println(`Your note is encrypted: ` + string(ciphertext))
+				fmt.Println(`Your note is encrypted by AES256: ` + string(ciphertext))
 				return
 			}
 
@@ -119,9 +117,7 @@ Store them in minIO or S3 buckets.`,
 				var armored io.WriteCloser
 				var crypter io.WriteCloser
 
-				r := strings.NewReader(gpgID)
-
-				entityList, _ := openpgp.ReadArmoredKeyRing(r)
+				entityList, _ := openpgp.ReadArmoredKeyRing(strings.NewReader(gpgID))
 
 				buffer = bytes.NewBuffer(nil)
 
@@ -153,13 +149,13 @@ Store them in minIO or S3 buckets.`,
 						return
 					}
 
-					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(encryptedData), int64(len(note)), minio.PutObjectOptions{})
+					minioClient.PutObject(cmd.Context(), "dollop", filename, strings.NewReader(buffer.String()), int64(len(note)), minio.PutObjectOptions{})
 
-					fmt.Println("Your data has been encrypted and stored in minIO")
+					fmt.Println("Your data has been encrypted by GPG and stored in minIO")
 					return
 				}
 
-				fmt.Println(buffer.String())
+				fmt.Println("Your note is encrypted by GPG: " + buffer.String())
 				return
 			}
 		}
