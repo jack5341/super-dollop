@@ -103,7 +103,7 @@ Store them in minIO or S3 buckets.`,
 						return
 					}
 
-					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(ciphertext), int64(len(note)), minio.PutObjectOptions{})
+					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(ciphertext), -1, minio.PutObjectOptions{})
 
 					fmt.Println("your data has been encrypted by AES256 and stored in minIO")
 					return
@@ -151,7 +151,7 @@ Store them in minIO or S3 buckets.`,
 						return
 					}
 
-					minioClient.PutObject(cmd.Context(), "dollop", filename, strings.NewReader(buffer.String()), int64(len(note)), minio.PutObjectOptions{})
+					minioClient.PutObject(cmd.Context(), "dollop", filename, strings.NewReader(buffer.String()), -1, minio.PutObjectOptions{})
 
 					fmt.Println("your data has been encrypted by GPG and stored in minIO")
 					return
@@ -212,7 +212,9 @@ Store them in minIO or S3 buckets.`,
 					return
 				}
 
-				minioClient.PutObject(cmd.Context(), "dollop", filename, strings.NewReader(buffer.String()), int64(len(note)), minio.PutObjectOptions{})
+				minioClient.PutObject(cmd.Context(), "dollop", filename, buffer, -1, minio.PutObjectOptions{
+					ContentType: "application/pgp-encrypted",
+				})
 
 				fmt.Println("your data has been encrypted by GPG and stored in minIO")
 				return
