@@ -44,6 +44,8 @@ var encCmd = &cobra.Command{
 	Long: `Encrypt your data AES256 or GPG key.
 Store them in minIO or S3 buckets.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// Flags
 		note, _ := cmd.Flags().GetString("note")
 		file, _ := cmd.Flags().GetString("file")
 		save, _ := cmd.Flags().GetBool("save")
@@ -97,17 +99,17 @@ Store them in minIO or S3 buckets.`,
 					}
 
 					if filename == "" {
-						fmt.Println("If you want to save your encrypted data in minIO, please provide a filename")
+						fmt.Println("if you want to save your encrypted data in minIO, please provide a filename")
 						return
 					}
 
 					minioClient.PutObject(cmd.Context(), "dollop", filename, bytes.NewReader(ciphertext), int64(len(note)), minio.PutObjectOptions{})
 
-					fmt.Println("Your data has been encrypted by AES256 and stored in minIO")
+					fmt.Println("your data has been encrypted by AES256 and stored in minIO")
 					return
 				}
 
-				fmt.Println(`Your note is encrypted by AES256: ` + string(ciphertext))
+				fmt.Println(`your note is encrypted by AES256: ` + string(ciphertext))
 				return
 			}
 
@@ -124,7 +126,7 @@ Store them in minIO or S3 buckets.`,
 				armored, err = armor.Encode(buffer, note, nil)
 
 				if err != nil {
-					log.Fatal("Error while encoding note")
+					log.Fatal("error while encoding note")
 					return
 				}
 
@@ -145,17 +147,17 @@ Store them in minIO or S3 buckets.`,
 					}
 
 					if filename == "" {
-						fmt.Println("If you want to save your encrypted data in minIO, please provide a filename")
+						fmt.Println("if you want to save your encrypted data in minIO, please provide a filename")
 						return
 					}
 
 					minioClient.PutObject(cmd.Context(), "dollop", filename, strings.NewReader(buffer.String()), int64(len(note)), minio.PutObjectOptions{})
 
-					fmt.Println("Your data has been encrypted by GPG and stored in minIO")
+					fmt.Println("your data has been encrypted by GPG and stored in minIO")
 					return
 				}
 
-				fmt.Println("Your note is encrypted by GPG: " + buffer.String())
+				fmt.Println("your note is encrypted by GPG: " + buffer.String())
 				return
 			}
 		}
@@ -166,6 +168,17 @@ Store them in minIO or S3 buckets.`,
 			var armored io.WriteCloser
 			var crypter io.WriteCloser
 
+			path := strings.ReplaceAll(file, `\ `, " ")
+
+			file, err := os.Open(path)
+
+			if err != nil {
+				log.Fatal("no such file or directory")
+				return
+			}
+
+			data, _ := io.ReadAll(file)
+
 			r := strings.NewReader(gpgID)
 
 			entityList, _ := openpgp.ReadArmoredKeyRing(r)
@@ -175,15 +188,37 @@ Store them in minIO or S3 buckets.`,
 			armored, err = armor.Encode(buffer, note, nil)
 
 			if err != nil {
-				log.Fatal("Error while encoding note")
+				log.Fatal("error while encoding note")
 			}
 
 			crypter, _ = openpgp.Encrypt(armored, entityList, nil, nil, nil)
 
-			crypter.Write([]byte(note))
+			crypter.Write([]byte(data))
 			crypter.Close()
 
-			fmt.Println(buffer.String())
+			if save {
+				minioClient, err := minio.New(endpoint, &minio.Options{
+					Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+					Secure: false,
+				})
+
+				if err != nil {
+					log.Fatal(err.Error())
+					return
+				}
+
+				if filename == "" {
+					fmt.Println("if you want to save your encrypted data in minIO, please provide a filename")
+					return
+				}
+
+				minioClient.PutObject(cmd.Context(), "dollop", filename, strings.NewReader(buffer.String()), int64(len(note)), minio.PutObjectOptions{})
+
+				fmt.Println("your data has been encrypted by GPG and stored in minIO")
+				return
+			}
+
+			fmt.Println("your file is encrypted by GPG: " + buffer.String())
 			return
 		}
 	},
