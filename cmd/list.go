@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
+Copyright © 2021 NEDIM AKAR nedim.akar53411@gmail.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
@@ -65,11 +66,11 @@ var listCmd = &cobra.Command{
 
 		if detail {
 			var table [][]string
-			listTable := append(table, []string{"Element Name", "Content-Type", "Last Modified", "Size"})
+			listTable := append(table, []string{"Element Name", "Last Modified", "Size"})
 
 			for e := range list {
 				sizeOfFile := util.ConvertByte(float64(e.Size))
-				listTable = append(listTable, []string{e.Key, e.ContentType, e.LastModified.String(), sizeOfFile})
+				listTable = append(listTable, []string{e.Key, e.LastModified.String(), sizeOfFile})
 			}
 
 			pterm.DefaultTable.WithHasHeader().WithData(listTable).Render()
@@ -80,7 +81,6 @@ var listCmd = &cobra.Command{
 			sizeOfFile := util.ConvertByte(float64(e.Size))
 			nameOfFile := e.Key
 			fmt.Println(nameOfFile + " ----- " + sizeOfFile)
-			return
 		}
 	},
 }
