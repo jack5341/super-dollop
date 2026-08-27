@@ -2,23 +2,35 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 
+	"github.com/jack5341/super-dollop/internal/storage"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List your all encrypted files and notes.",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := list()
+	Short: "List your encrypted notes and files",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		app, err := getApp()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+
+		notes, err := app.client.List("notes/")
+		if err != nil {
+			return err
+		}
+		renderTable("Your Notes", notes)
+
+		files, err := app.client.List("files/")
+		if err != nil {
+			return err
+		}
+		renderTable("Your Files", files)
+
+		return nil
 	},
 }
 
@@ -26,42 +38,16 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 }
 
-func list() error {
-	bucketName := os.Getenv("MINIO_BUCKET_NAME")
-
-	// Notes
-	NoteList := Client.ListObjects(bucketName, "notes", true, nil)
-
-	var table [][]string
-
-	NoteTable := append(table, []string{"Owner Display Name", "Key", "Size"})
-
-	for v := range NoteList {
-		size := strconv.FormatInt(v.Size, 10)
-		NoteTable = append(NoteTable, []string{v.Owner.DisplayName, v.Key, size})
+func renderTable(title string, objects []storage.ObjectInfo) {
+	if len(objects) == 0 {
+		return
 	}
 
-	if len(NoteTable) > 1 {
-		fmt.Print("Your Notes \n")
-		fmt.Println("----------")
-		pterm.DefaultTable.WithHasHeader().WithData(NoteTable).Render()
+	table := [][]string{{"Key", "Size"}}
+	for _, obj := range objects {
+		table = append(table, []string{obj.Key, strconv.FormatInt(obj.Size, 10)})
 	}
 
-	// Files
-	FileList := Client.ListObjects(bucketName, "files", true, nil)
-
-	FileTable := append(table, []string{"Owner Display Name", "Key", "Size"})
-
-	for v := range FileList {
-		size := strconv.FormatInt(v.Size, 10)
-		FileTable = append(FileTable, []string{v.Owner.DisplayName, v.Key, size})
-	}
-
-	if len(FileList) > 1 {
-		fmt.Print("Your Files \n")
-		fmt.Println("----------")
-		pterm.DefaultTable.WithHasHeader().WithData(FileTable).Render()
-	}
-
-	return nil
+	fmt.Printf("%s\n----------\n", title)
+	pterm.DefaultTable.WithHasHeader().WithData(table).Render()
 }

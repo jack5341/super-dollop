@@ -1,55 +1,49 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/jack5341/super-dollop/internal/storage"
 	"github.com/spf13/cobra"
-	"log"
-	"os"
 )
 
-// listCmd represents the list command
 var deleteCmd = &cobra.Command{
-	Use:     "delete",
-	Short:   "Delete your files or notes.",
-	Example: "dollop delete -n my-note\n# Or \ndollop delete -f my-file",
-	Run: func(cmd *cobra.Command, args []string) {
-		isNote, _ := cmd.Flags().GetBool("note")
-		isFile, _ := cmd.Flags().GetBool("file")
+	Use:   "delete",
+	Short: "Delete a stored note or file",
+	Example: `  dollop delete -n my-note
+  dollop delete -f my-file`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		note, _ := cmd.Flags().GetString("note")
+		file, _ := cmd.Flags().GetString("file")
 
-		if args[0] == "" {
-			log.Fatal("You need to provide file name or note name")
+		if (note == "") == (file == "") {
+			return fmt.Errorf("provide exactly one of -n/--note or -f/--file")
 		}
 
-		name := "/"
-		if isNote {
-			name += "note/"
-		} else if isFile {
-			name += "files/"
-		}
-		name += args[0] + ".asc"
-
-		err := deleteObject(name)
+		app, err := getApp()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+
+		kind := storage.Note
+		name := note
+		if file != "" {
+			kind = storage.File
+			name = file
+		}
+
+		key := storage.Key(kind, name)
+		if err := app.client.Remove(key); err != nil {
+			return err
+		}
+
+		fmt.Printf("removed %s\n", key)
+		return nil
 	},
 }
 
 func init() {
+	deleteCmd.Flags().StringP("note", "n", "", "name of the note to delete")
+	deleteCmd.Flags().StringP("file", "f", "", "name of the file to delete")
 	rootCmd.AddCommand(deleteCmd)
-	deleteCmd.Flags().BoolP("note", "n", true, "--note")
-	deleteCmd.Flags().BoolP("file", "f", false, "--file")
-}
-
-func deleteObject(name string) error {
-	bucketName := os.Getenv("MINIO_BUCKET_NAME")
-
-	err := Client.RemoveObject(bucketName, name)
-	if err != nil {
-		return errors.New("failed to remove object")
-	}
-	fmt.Println("removed successfully")
-
-	return nil
 }
