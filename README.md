@@ -26,9 +26,20 @@ dollop list
 ```
 
 # Requirements
-- [Go](https://golang.org/) `>= 1.16
+- [Go](https://golang.org/) `>= 1.22`
 - [MinIO](https://docs.min.io/docs/minio-quickstart-guide.html)
-- Core dependencies: `gnugpg`, `gpgme>=1.7.0`, `libgpg-error`
+- Core dependencies: `gnupg`
+
+Copy `.env.example` to `.env` and fill in your values, or export the
+variables in your shell:
+
+```sh
+export MINIO_ENDPOINT=127.0.0.1:9000
+export MINIO_ACCESS_KEY=admin
+export MINIO_SECRET_KEY=secretadmin
+export MINIO_GPG_ID=GPG-ID
+export MINIO_BUCKET_NAME=dollop-files
+```
 
 # Installation
 
@@ -36,18 +47,6 @@ Install [gnupg](https://www.gnupg.org/)
 
 ```sh
 sudo apt-get install gnupg
-```
-
-Set your environments to your terminal
-
-> .zshrc
-```sh
-# Environment variables for MinIO
-export MINIO_ENDPOINT=127.0.0.1:9000
-export MINIO_ACCESS_KEY=admin
-export MINIO_SECRET_KEY=secretadmin
-export MINIO_GPG_ID=GPG-ID
-export MINIO_BUCKET_NAME=dollop-files
 ```
 
 Get your [MinIO](https://docs.min.io/docs/minio-quickstart-guide.html) container.
@@ -101,19 +100,21 @@ dollop [FLAGS] [OPTIONS]
 ```sh
 COMMANDS:
     completion  generate the autocompletion script for the specified shell
-    dec         List your all encrypted files and notes.
-    enc         A brief description of your command
+    dec         Decrypt a stored note or file and print it
+    delete      Delete a stored note or file
+    enc         Encrypt a note or file and store it
     help        Help about any command
-    list        List your all encrypted files and notes.
+    list        List your encrypted notes and files
 ```
 
 # Cli Schema
 
 | Commands | Flags |     
 | :-------- | :------- | 
-| `dec`      | `-n --name` | 
-| `enc`      | `-f --file -n --note -p --print` | 
-| `list`      | `-d --delete` | 
+| `dec`      | `-n --note`, `-f --file` | 
+| `delete`   | `-n --note`, `-f --file` | 
+| `enc`      | `-n --note`, `-f --file`, `-p --print` | 
+| `list`     | — | 
 
 ## Feedback
 
